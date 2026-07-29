@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.8
+    container_name: aurix-clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-aurix_analytics}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-aurix}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-aurix_dev_password}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./config.xml:/etc/clickhouse-server/config.xml
+      - ./users.xml:/etc/clickhouse-server/users.xml
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - aurix-data-network
+
+  clickhouse-client:
+    image: clickhouse/clickhouse-client:23.8
+    container_name: aurix-clickhouse-client
+    depends_on:
+      - clickhouse
+    command: ["clickhouse-client", "--host", "clickhouse", "--user", "${CLICKHOUSE_USER:-aurix}", "--password", "${CLICKHOUSE_PASSWORD:-aurix_dev_password}"]
+    networks:
+      - aurix-data-network
+
+volumes:
+  clickhouse_data:
+
+networks:
+  aurix-data-network:
+    driver: bridge

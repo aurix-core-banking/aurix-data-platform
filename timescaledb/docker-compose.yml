@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: aurix-timescaledb
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: ${TIMESCALEDB_DB:-aurix_timeseries}
+      POSTGRES_USER: ${TIMESCALEDB_USER:-aurix}
+      POSTGRES_PASSWORD: ${TIMESCALEDB_PASSWORD:-aurix_dev_password}
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TIMESCALEDB_USER:-aurix} -d ${TIMESCALEDB_DB:-aurix_timeseries}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  timescaledb_data:
