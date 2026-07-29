@@ -1,0 +1,36 @@
+# Python (dbt)
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+
+# dbt
+target/
+dbt_packages/
+logs/
+profiles.yml
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.venv
+env/
+
+# Data
+*.db
+*.sqlite
+*.duckdb
+
+# Logs
+*.log
+
+# Temp
+tmp/
+temp/
