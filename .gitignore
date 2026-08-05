@@ -28,6 +28,9 @@ env/
 *.sqlite
 *.duckdb
 
+# Backups
+backup/
+
 # Logs
 *.log
 

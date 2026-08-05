@@ -1,0 +1,21 @@
+{
+  "name": "aurix-s3-sink-backup",
+  "config": {
+    "connector.class": "io.confluent.connect.s3.S3SinkConnector",
+    "tasks.max": "1",
+    "topics": "aurix.transacoes,aurix.pix,aurix.pix.devolucoes,aurix.clientes,aurix.contas,aurix.fraudes,aurix.outbox",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+    "format.class": "io.confluent.connect.s3.format.json.JsonFormat",
+    "partition.duration.ms": "600000",
+    "rotate.schedule.interval.ms": "600000",
+    "flush.size": "10000",
+    "store.url": "http://minio:9000",
+    "s3.bucket.name": "aurix-kafka-backups",
+    "s3.region": "us-east-1",
+    "s3.path.style.access": "true",
+    "aws.access.key.id": "${file:/opt/connector-s3.conf:aws_access_key_id}",
+    "aws.secret.access.key": "${file:/opt/connector-s3.conf:aws_secret_access_key}"
+  }
+}

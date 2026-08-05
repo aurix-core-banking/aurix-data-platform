@@ -9,11 +9,14 @@ services:
       - xpack.security.enabled=${ELASTICSEARCH_SECURITY_ENABLED:-false}
       - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-aurix_dev_password}
       - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    command:
+      - "-Epath.repo=/usr/share/elasticsearch/backups"
     ports:
       - "9200:9200"
       - "9300:9300"
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
+      - ../backup/elasticsearch:/usr/share/elasticsearch/backups
     networks:
       - aurix-data-network
 

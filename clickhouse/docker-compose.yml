@@ -17,6 +17,7 @@ services:
       - ./config.xml:/etc/clickhouse-server/config.xml
       - ./users.xml:/etc/clickhouse-server/users.xml
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../backup/clickhouse:/var/lib/clickhouse/backups
     networks:
       - aurix-data-network
 

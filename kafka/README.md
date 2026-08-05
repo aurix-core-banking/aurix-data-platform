@@ -1,43 +1,66 @@
-# AURIX Kafka — Docker Compose Profiles
+# Backup e Restore — Kafka
 
-Este diretório contém dois perfis de configuração Kafka:
+## Estratégia
 
-| Perfil | Arquivo | Brokers | Fator de Replicação | Quando usar |
-|--------|---------|---------|----------------------|-------------|
-| **dev** | `docker-compose.yml` | 1 | 1 | Desenvolvimento local |
-| **staging** | `docker-compose.staging.yml` | 3 | 3 | Homologação / pré-produção |
+- **Backup contínuo de tópicos** via Kafka Connect **S3 sink** (conector
+  `aurix-s3-sink-backup`, definido em `connect-s3-sink.json`), gravando JSON em
+  bucket S3/MinIO (`aurix-kafka-backups`) com rotação a cada 10 minutos.
+- O conector usa `StringConverter`/`JsonConverter` (sem Schema Registry),
+  mantendo compatibilidade com o JsonConverter do JsonFormat para replay.
+- Os tópicos protegidos incluem o tópico de **outbox** (`aurix.outbox`),
+  essencial para recuperação de eventos não entregues.
 
-## Como usar
+## Backup
 
-### Perfil Dev (padrão)
 ```bash
-docker compose -f docker-compose.yml up -d
+# Cria o bucket e aplica o conector com os tópicos reais do cluster
+./kafka/backup-topics.sh
+
+# Aplicar sem listar (usar a lista fixa do connect-s3-sink.json)
+curl -X PUT http://localhost:8083/connectors/aurix-s3-sink-backup/config \
+  -H 'Content-Type: application/json' -d @kafka/connect-s3-sink.json
 ```
 
-### Perfil Staging (3 brokers, replicação 3)
-```bash
-docker compose -f docker-compose.staging.yml up -d
+### Credenciais S3/MinIO
+
+O conector referencia credenciais via `file:/opt/connector-s3.conf`. No
+docker-compose do `kafka-connect`, monte este arquivo (ex.: secret do
+Kubernetes ou `./secrets/connector-s3.conf`) com o formato:
+
+```properties
+aws_access_key_id=aurix
+aws_secret_access_key=aurix_dev_password
 ```
 
-### Parar os serviços
-```bash
-# Dev
-docker compose -f docker-compose.yml down
+## Restore (replay de tópicos)
 
-# Staging
-docker compose -f docker-compose.staging.yml down
+1. Identifique o prefixo no bucket (`topics/aurix.pix/partition=0/...`).
+2. Recrie os tópicos com a mesma configuração de partições/replicação.
+3. Replay via **S3 source connector** (`io.confluent.connect.s3.S3SourceConnector`)
+   apontando para o bucket com `topics.dir=topics`, ou reprocesse os arquivos
+   JSON com o consumer do `aurix-data-pipelines` (Spark `read.json`).
+
+```bash
+# Exemplo de configuração mínima do source connector
+curl -X POST http://localhost:8083/connectors -H 'Content-Type: application/json' -d '{
+  "name": "aurix-s3-source-restore",
+  "config": {
+    "connector.class": "io.confluent.connect.s3.S3SourceConnector",
+    "tasks.max": "1",
+    "store.url": "http://minio:9000",
+    "s3.bucket.name": "aurix-kafka-backups",
+    "format.class": "io.confluent.connect.s3.format.json.JsonFormat",
+    "topics.dir": "topics",
+    "s3.region": "us-east-1",
+    "s3.path.style.access": "true"
+  }
+}'
 ```
 
-## Variáveis de Ambiente
+## Notas
 
-Copie `.env.example` para `.env` antes de iniciar:
-```bash
-cp .env.example .env
-```
-
-| Variável | Dev | Staging | Descrição |
-|----------|-----|---------|-----------|
-| `KAFKA_UI_PORT` | 8085 | 8085 | Porta host do Kafka UI |
-| `KAFKA_REPLICATION_FACTOR` | 1 | 3 | Fator de replicação dos tópicos |
-
-> **Nota:** A porta `8085` foi escolhida para o Kafka UI para evitar conflito com o Keycloak que usa a porta `8080` no `infra/docker-compose.yml`.
+- O conector S3 sink exige o plugin `kafka-connect-s3` instalado em
+  `/usr/share/confluent-hub-components` do `kafka-connect`
+  (`confluent-hub install confluentinc/kafka-connect-s3:10.x`).
+- A replicação cross-cluster (contínua) pode usar o `MirrorMaker 2` como
+  alternativa ao snapshot; o S3 sink atende ao requisito de backup com replay.
