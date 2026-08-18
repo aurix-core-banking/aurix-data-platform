@@ -1,0 +1,25 @@
+{
+  "name": "aurix-postgres-cdc",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+    "plugin.name": "pgoutput",
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "aurix_user",
+    "database.password": "aurix_secure_password",
+    "database.dbname": "aurix",
+    "topic.prefix": "cdc",
+    "table.include.list": "aurix.contas,aurix.clientes,aurix.transacoes,aurix.pix_pagamentos",
+    "snapshot.mode": "initial",
+    "slot.name": "aurix_cdc_slot",
+    "publication.autocreate.mode": "filtered",
+    "decimal.handling.mode": "double",
+    "include.schema.changes": "false",
+    "tombstones.on.delete": "false",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter.schemas.enable": "false"
+  }
+}
