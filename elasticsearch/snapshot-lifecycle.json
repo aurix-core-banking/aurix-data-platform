@@ -1,0 +1,57 @@
+{
+  "_meta": {
+    "descricao": "Política de Snapshot Lifecycle Management (SLM) e ILM para o Elasticsearch da Aurix.",
+    "repo": "aurix-snapshots"
+  },
+  "slm_policy": {
+    "id": "aurix-slm-policy",
+    "config": {
+      "indices": ["*", "-.kibana*", "-.security*", "-.monitoring*"],
+      "ignore_unavailable": true,
+      "include_global_state": false,
+      "feature_states": ["none"]
+    },
+    "schedule": "0 0 3 * * ?",
+    "name": "<aurix-snapshot-{now/d}>",
+    "repository": "aurix-snapshots",
+    "retention": {
+      "expire_after": "30d",
+      "min_count": 7,
+      "max_count": 30
+    }
+  },
+  "ilm_policy": {
+    "id": "aurix-ilm-policy",
+    "body": {
+      "policy": {
+        "phases": {
+          "hot": {
+            "min_age": "0ms",
+            "actions": {
+              "rollover": {
+                "max_age": "7d",
+                "max_size": "50gb",
+                "max_primary_shard_size": "50gb"
+              },
+              "set_priority": { "priority": 100 }
+            }
+          },
+          "warm": {
+            "min_age": "7d",
+            "actions": {
+              "forcemerge": { "max_num_segments": 1 },
+              "shrink": { "number_of_shards": 1 },
+              "set_priority": { "priority": 50 }
+            }
+          },
+          "delete": {
+            "min_age": "30d",
+            "actions": {
+              "delete": {}
+            }
+          }
+        }
+      }
+    }
+  }
+}

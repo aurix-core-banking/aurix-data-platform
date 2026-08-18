@@ -1,91 +1,66 @@
-# AURIX Kafka — Docker Compose Profiles
+# Backup e Restore — Kafka
 
-Este diretório contém dois perfis de configuração Kafka:
+## Estratégia
 
-| Perfil | Arquivo | Brokers | Fator de Replicação | Quando usar |
-|--------|---------|---------|----------------------|-------------|
-| **dev** | `docker-compose.yml` | 1 | 1 | Desenvolvimento local |
-| **staging** | `docker-compose.staging.yml` | 3 | 3 | Homologação / pré-produção |
+- **Backup contínuo de tópicos** via Kafka Connect **S3 sink** (conector
+  `aurix-s3-sink-backup`, definido em `connect-s3-sink.json`), gravando JSON em
+  bucket S3/MinIO (`aurix-kafka-backups`) com rotação a cada 10 minutos.
+- O conector usa `StringConverter`/`JsonConverter` (sem Schema Registry),
+  mantendo compatibilidade com o JsonConverter do JsonFormat para replay.
+- Os tópicos protegidos incluem o tópico de **outbox** (`aurix.outbox`),
+  essencial para recuperação de eventos não entregues.
 
-## Como usar
-
-### Perfil Dev (padrão)
-```bash
-docker compose -f docker-compose.yml up -d
-```
-
-### Perfil Staging (3 brokers, replicação 3)
-```bash
-docker compose -f docker-compose.staging.yml up -d
-```
-
-### Parar os serviços
-```bash
-# Dev
-docker compose -f docker-compose.yml down
-
-# Staging
-docker compose -f docker-compose.staging.yml down
-```
-
-## Variáveis de Ambiente
-
-Copie `.env.example` para `.env` antes de iniciar:
-```bash
-cp .env.example .env
-```
-
-| Variável | Dev | Staging | Descrição |
-|----------|-----|---------|-----------|
-| `KAFKA_UI_PORT` | 8085 | 8085 | Porta host do Kafka UI |
-| `KAFKA_REPLICATION_FACTOR` | 1 | 3 | Fator de replicação dos tópicos |
-
-> **Nota:** A porta `8085` foi escolhida para o Kafka UI para evitar conflito com o Keycloak que usa a porta `8080` no `infra/docker-compose.yml`.
-
-## Change Data Capture (CDC) com Debezium
-
-O Kafka Connect captura mudanças do PostgreSQL (`aurix_db`, schema `aurix`) em tempo real e publica em tópicos `cdc.<schema>.<tabela>`.
-
-### Conector
-
-`connect-debezium-postgres.json` — `PostgresConnector` com `pgoutput`, snapshot inicial e publicação filtrada para:
-
-| Tabela | Tópico |
-|--------|--------|
-| `contas` | `cdc.aurix.contas` |
-| `clientes` | `cdc.aurix.clientes` |
-| `transacoes` | `cdc.aurix.transacoes` |
-| `pix_pagamentos` | `cdc.aurix.pix_pagamentos` |
-
-### Deploy
-
-O serviço `debezium-connect` já sobe junto com o stack (porta `8083`). Para registrar o conector:
+## Backup
 
 ```bash
-# a partir de aurix-infrastructure/data-stack/
-./scripts/deploy-debezium-connector.sh
+# Cria o bucket e aplica o conector com os tópicos reais do cluster
+./kafka/backup-topics.sh
 
-# ou manualmente
-curl -X POST http://localhost:8083/connectors \
-  -H "Content-Type: application/json" \
-  -d @connect-debezium-postgres.json
+# Aplicar sem listar (usar a lista fixa do connect-s3-sink.json)
+curl -X PUT http://localhost:8083/connectors/aurix-s3-sink-backup/config \
+  -H 'Content-Type: application/json' -d @kafka/connect-s3-sink.json
 ```
 
-### Verificar
+### Credenciais S3/MinIO
+
+O conector referencia credenciais via `file:/opt/connector-s3.conf`. No
+docker-compose do `kafka-connect`, monte este arquivo (ex.: secret do
+Kubernetes ou `./secrets/connector-s3.conf`) com o formato:
+
+```properties
+aws_access_key_id=aurix
+aws_secret_access_key=aurix_dev_password
+```
+
+## Restore (replay de tópicos)
+
+1. Identifique o prefixo no bucket (`topics/aurix.pix/partition=0/...`).
+2. Recrie os tópicos com a mesma configuração de partições/replicação.
+3. Replay via **S3 source connector** (`io.confluent.connect.s3.S3SourceConnector`)
+   apontando para o bucket com `topics.dir=topics`, ou reprocesse os arquivos
+   JSON com o consumer do `aurix-data-pipelines` (Spark `read.json`).
 
 ```bash
-# Status do conector
-curl http://localhost:8083/connectors/aurix-postgres-cdc/status
-
-# Tópicos criados
-docker exec aurix-kafka kafka-topics.sh --bootstrap-server localhost:9092 --list | grep cdc
+# Exemplo de configuração mínima do source connector
+curl -X POST http://localhost:8083/connectors -H 'Content-Type: application/json' -d '{
+  "name": "aurix-s3-source-restore",
+  "config": {
+    "connector.class": "io.confluent.connect.s3.S3SourceConnector",
+    "tasks.max": "1",
+    "store.url": "http://minio:9000",
+    "s3.bucket.name": "aurix-kafka-backups",
+    "format.class": "io.confluent.connect.s3.format.json.JsonFormat",
+    "topics.dir": "topics",
+    "s3.region": "us-east-1",
+    "s3.path.style.access": "true"
+  }
+}'
 ```
 
-### Observações
+## Notas
 
-- Requer `wal_level=logical`, `max_replication_slots` e `max_wal_senders` no PostgreSQL (já configurado no `data-stack/docker-compose.yml`).
-- `snapshot.mode=initial`: as tabelas são copiadas uma vez na ativação e depois seguem o fluxo do WAL.
-- `tombstones.on.delete=false`: DELETE publica evento com payload `null` e chave da linha removida.
-- `decimal.handling.mode=double`: colunas `NUMERIC` viram `double` no JSON.
-- `publication.autocreate.mode=filtered`: cria a publicação apenas com as tabelas da `table.include.list`.
-- O backup por Kafka Connect S3 (Sink) permanece independente dos tópicos `cdc.*`.
+- O conector S3 sink exige o plugin `kafka-connect-s3` instalado em
+  `/usr/share/confluent-hub-components` do `kafka-connect`
+  (`confluent-hub install confluentinc/kafka-connect-s3:10.x`).
+- A replicação cross-cluster (contínua) pode usar o `MirrorMaker 2` como
+  alternativa ao snapshot; o S3 sink atende ao requisito de backup com replay.
