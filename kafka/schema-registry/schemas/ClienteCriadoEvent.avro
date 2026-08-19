@@ -1,0 +1,75 @@
+{
+  "type": "record",
+  "name": "ClienteCriadoEvent",
+  "namespace": "com.aurix.platform.shared.event",
+  "doc": "Evento emitido quando um novo cliente é criado na plataforma Aurix",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "Identificador único do evento"
+    },
+    {
+      "name": "eventType",
+      "type": "string",
+      "default": "CLIENTE_CRIADO",
+      "doc": "Tipo do evento"
+    },
+    {
+      "name": "source",
+      "type": "string",
+      "default": "aurix-customer",
+      "doc": "Origem do evento"
+    },
+    {
+      "name": "timestamp",
+      "type": "string",
+      "doc": "Timestamp ISO-8601 de ocorrência"
+    },
+    {
+      "name": "correlationId",
+      "type": "string",
+      "doc": "ID de correlação para rastreamento"
+    },
+    {
+      "name": "clienteId",
+      "type": "long",
+      "doc": "ID do cliente"
+    },
+    {
+      "name": "documento",
+      "type": "string",
+      "doc": "CPF ou CNPJ do cliente"
+    },
+    {
+      "name": "nome",
+      "type": "string",
+      "doc": "Nome completo do cliente"
+    },
+    {
+      "name": "tipoPessoa",
+      "type": {
+        "type": "enum",
+        "name": "TipoPessoa",
+        "symbols": ["PF", "PJ"],
+        "doc": "Tipo de pessoa: PF ou PJ"
+      },
+      "doc": "Tipo de pessoa"
+    },
+    {
+      "name": "segmento",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Segmento do cliente (ex: VAREJO, PJ, PRIVATE)"
+    },
+    {
+      "name": "metadata",
+      "type": ["null", {
+        "type": "map",
+        "values": "string"
+      }],
+      "default": null,
+      "doc": "Metadados suplementares"
+    }
+  ]
+}

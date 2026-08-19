@@ -1,0 +1,89 @@
+{
+  "type": "record",
+  "name": "PixLiquidadoEvent",
+  "namespace": "com.aurix.platform.shared.event",
+  "doc": "Evento emitido quando uma transferência PIX é liquidada via SPI",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "Identificador único do evento"
+    },
+    {
+      "name": "eventType",
+      "type": "string",
+      "default": "PIX_LIQUIDADO",
+      "doc": "Tipo do evento"
+    },
+    {
+      "name": "source",
+      "type": "string",
+      "default": "aurix-payments",
+      "doc": "Origem do evento"
+    },
+    {
+      "name": "timestamp",
+      "type": "string",
+      "doc": "Timestamp ISO-8601 de ocorrência"
+    },
+    {
+      "name": "correlationId",
+      "type": "string",
+      "doc": "ID de correlação para rastreamento"
+    },
+    {
+      "name": "endToEndId",
+      "type": "string",
+      "doc": "Identificador fim-a-fim da transação PIX"
+    },
+    {
+      "name": "transacaoId",
+      "type": "long",
+      "doc": "ID da transação interna"
+    },
+    {
+      "name": "valor",
+      "type": "string",
+      "doc": "Valor líquido em centavos"
+    },
+    {
+      "name": "chavePixDestino",
+      "type": "string",
+      "doc": "Chave PIX do destinatário"
+    },
+    {
+      "name": "ispbOrigem",
+      "type": "string",
+      "doc": "ISPB da instituição de origem"
+    },
+    {
+      "name": "ispbDestino",
+      "type": "string",
+      "doc": "ISPB da instituição de destino"
+    },
+    {
+      "name": "dataHoraLiquidacao",
+      "type": "string",
+      "doc": "Timestamp ISO-8601 da liquidação"
+    },
+    {
+      "name": "status",
+      "type": {
+        "type": "enum",
+        "name": "StatusLiquidacao",
+        "symbols": ["LIQUIDADA", "REJEITADA", "DEVOLVIDA"],
+        "doc": "Status da liquidação"
+      },
+      "doc": "Status da liquidação"
+    },
+    {
+      "name": "metadata",
+      "type": ["null", {
+        "type": "map",
+        "values": "string"
+      }],
+      "default": null,
+      "doc": "Metadados suplementares"
+    }
+  ]
+}

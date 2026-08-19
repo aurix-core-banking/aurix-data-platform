@@ -1,0 +1,74 @@
+{
+  "type": "record",
+  "name": "TransacaoAutorizadaEvent",
+  "namespace": "com.aurix.platform.shared.event",
+  "doc": "Evento emitido quando uma transação é autorizada (cartão/terminal)",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "Identificador único do evento"
+    },
+    {
+      "name": "eventType",
+      "type": "string",
+      "default": "TRANSACAO_AUTORIZADA",
+      "doc": "Tipo do evento"
+    },
+    {
+      "name": "source",
+      "type": "string",
+      "default": "aurix-acquirer",
+      "doc": "Origem do evento"
+    },
+    {
+      "name": "timestamp",
+      "type": "string",
+      "doc": "Timestamp ISO-8601 de ocorrência"
+    },
+    {
+      "name": "correlationId",
+      "type": "string",
+      "doc": "ID de correlação para rastreamento"
+    },
+    {
+      "name": "transacaoId",
+      "type": "long",
+      "doc": "ID da transação"
+    },
+    {
+      "name": "terminalId",
+      "type": "long",
+      "doc": "ID do terminal"
+    },
+    {
+      "name": "valor",
+      "type": "string",
+      "doc": "Valor da transação em centavos"
+    },
+    {
+      "name": "bandeira",
+      "type": "string",
+      "doc": "Bandeira do cartão (VISA, MASTERCARD, ELO)"
+    },
+    {
+      "name": "codigoAutorizacao",
+      "type": "string",
+      "doc": "Código de autorização da operadora"
+    },
+    {
+      "name": "nsu",
+      "type": "string",
+      "doc": "Número Sequencial Único da transação"
+    },
+    {
+      "name": "metadata",
+      "type": ["null", {
+        "type": "map",
+        "values": "string"
+      }],
+      "default": null,
+      "doc": "Metadados suplementares"
+    }
+  ]
+}

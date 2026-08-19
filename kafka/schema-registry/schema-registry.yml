@@ -1,0 +1,53 @@
+name: aurix-schema-registry
+
+description: >
+  Confluent Schema Registry para validação de schemas Avro dos eventos
+  da plataforma Aurix. Compatibilidade: BACKWARD.
+
+compatibility:
+  mode: BACKWARD
+  defaultGroup: aurix-events
+
+kafka:
+  bootstrap.servers: kafka:29092
+  schema.registry.kafkastore.bootstrap.servers: kafka:29092
+
+schemas:
+  - name: ClienteCriadoEvent
+    file: schemas/ClienteCriadoEvent.avro
+    topic: aurix.customer.cliente-criado
+    compatibility: BACKWARD
+  - name: TransacaoAutorizadaEvent
+    file: schemas/TransacaoAutorizadaEvent.avro
+    topic: aurix.banking.transacao-autorizada
+    compatibility: BACKWARD
+  - name: PixLiquidadoEvent
+    file: schemas/PixLiquidadoEvent.avro
+    topic: aurix.payments.pix-liquidado
+    compatibility: BACKWARD
+  - name: ContaCriadaEvent
+    file: schemas/ContaCriadaEvent.avro
+    topic: aurix.banking.conta-criada
+    compatibility: BACKWARD
+
+topics:
+  aurix.customer.cliente-criado:
+    partitions: 3
+    replication: 1
+    cleanup.policy: compact
+    retention.ms: 7776000000
+  aurix.banking.transacao-autorizada:
+    partitions: 6
+    replication: 1
+    cleanup.policy: compact
+    retention.ms: 2592000000
+  aurix.payments.pix-liquidado:
+    partitions: 6
+    replication: 1
+    cleanup.policy: compact
+    retention.ms: 7776000000
+  aurix.banking.conta-criada:
+    partitions: 3
+    replication: 1
+    cleanup.policy: compact
+    retention.ms: 7776000000

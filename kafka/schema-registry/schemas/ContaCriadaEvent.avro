@@ -1,0 +1,87 @@
+{
+  "type": "record",
+  "name": "ContaCriadaEvent",
+  "namespace": "com.aurix.platform.shared.event",
+  "doc": "Evento emitido quando uma nova conta bancária é criada",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "Identificador único do evento"
+    },
+    {
+      "name": "eventType",
+      "type": "string",
+      "default": "CONTA_CRIADA",
+      "doc": "Tipo do evento"
+    },
+    {
+      "name": "source",
+      "type": "string",
+      "default": "aurix-core",
+      "doc": "Origem do evento"
+    },
+    {
+      "name": "timestamp",
+      "type": "string",
+      "doc": "Timestamp ISO-8601 de ocorrência"
+    },
+    {
+      "name": "correlationId",
+      "type": "string",
+      "doc": "ID de correlação para rastreamento"
+    },
+    {
+      "name": "contaId",
+      "type": "string",
+      "doc": "ID da conta bancária"
+    },
+    {
+      "name": "clienteId",
+      "type": "string",
+      "doc": "ID do cliente titular"
+    },
+    {
+      "name": "saldo",
+      "type": "string",
+      "doc": "Saldo inicial em centavos"
+    },
+    {
+      "name": "tipoConta",
+      "type": {
+        "type": "enum",
+        "name": "TipoConta",
+        "symbols": ["CORRENTE", "POUPANCA", "SALARIO", "INVESTIMENTO"],
+        "doc": "Tipo da conta"
+      },
+      "doc": "Tipo da conta bancária"
+    },
+    {
+      "name": "agencia",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Número da agência"
+    },
+    {
+      "name": "numeroConta",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Número da conta"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "ATIVA",
+      "doc": "Status da conta"
+    },
+    {
+      "name": "metadata",
+      "type": ["null", {
+        "type": "map",
+        "values": "string"
+      }],
+      "default": null,
+      "doc": "Metadados suplementares"
+    }
+  ]
+}
